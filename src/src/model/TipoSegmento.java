@@ -66,16 +66,26 @@ public enum TipoSegmento {
     }
 
     public List<Integer> getDirecoesSaida(int direcaoEntrada) {
-        List<Integer> saidas = new ArrayList();
+        List<Integer> saidas = new ArrayList<>();
+
         if (this.isCruzamento) {
             int direcaoOposta = this.getDirecaoOposta(direcaoEntrada);
 
-            for(int dir : this.direcoesPermitidas) {
-                if (dir != direcaoOposta) {
-                    saidas.add(dir);
+            // Para cruzamentos unidirecionais (só 1 direção permitida),
+            // não podemos remover a direção oposta senão fica sem saída
+            if (this.direcoesPermitidas.length == 1) {
+                // Cruzamento unidirecional - só pode seguir na mesma direção
+                saidas.add(this.direcoesPermitidas[0]);
+            } else {
+                // Cruzamento bidirecional - pode virar (remove apenas direção oposta)
+                for (int direcao : this.direcoesPermitidas) {
+                    if (direcao != direcaoOposta) {
+                        saidas.add(direcao);
+                    }
                 }
             }
         } else if (this.direcoesPermitidas.length > 0) {
+            // Estrada normal - continua na direção da estrada
             saidas.add(this.direcoesPermitidas[0]);
         }
 
@@ -103,7 +113,6 @@ public enum TipoSegmento {
     }
 
     public String toString() {
-        String var10000 = this.name();
-        return var10000 + "(" + this.codigo + ")";
+        return this.name() + "(" + this.codigo + ")";
     }
 }

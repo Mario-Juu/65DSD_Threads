@@ -27,11 +27,10 @@ public class Cruzamento {
     public boolean tentarEntrar(Posicao posicao, int veiculoId) {
         List<Posicao> celulasCruzamento = this.malha.getCelulasCruzamento(posicao);
         if (celulasCruzamento.isEmpty()) {
-            System.err.println("ERRO: Cruzamento não encontrado: " + String.valueOf(posicao));
+            System.err.println("ERRO: Cruzamento não encontrado: " + posicao);
             return false;
-        } else {
-            return this.estrategia.tentarEntrarCruzamento(posicao, celulasCruzamento, veiculoId);
         }
+        return this.estrategia.tentarEntrarCruzamento(posicao, celulasCruzamento, veiculoId);
     }
 
     public void sair(Posicao posicao, int veiculoId) {

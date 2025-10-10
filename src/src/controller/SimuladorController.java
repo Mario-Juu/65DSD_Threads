@@ -34,9 +34,9 @@ public class SimuladorController {
         this.malha = Malha.carregarDeArquivo(caminhoArquivo);
         this.estrategiaAtual = estrategia;
         this.gerenciadorCruzamento = new Cruzamento(this.malha, estrategia);
-        System.out.println("Malha carregada: " + String.valueOf(this.malha));
-        System.out.println("Pontos de entrada: " + String.valueOf(this.malha.getPontosEntrada()));
-        System.out.println("Pontos de saída: " + String.valueOf(this.malha.getPontosSaida()));
+        System.out.println("Malha carregada: " + this.malha);
+        System.out.println("Pontos de entrada: " + this.malha.getPontosEntrada());
+        System.out.println("Pontos de saída: " + this.malha.getPontosSaida());
         System.out.println("Estratégia de sincronização: " + estrategia.getNome());
     }
 
@@ -93,19 +93,21 @@ public class SimuladorController {
         List<Posicao> pontosEntrada = this.malha.getPontosEntrada();
         if (pontosEntrada.isEmpty()) {
             System.err.println("Nenhum ponto de entrada disponível");
-        } else {
-            Posicao entrada = (Posicao)pontosEntrada.get(random.nextInt(pontosEntrada.size()));
-            Celula celulaEntrada = this.malha.getCelula(entrada);
-            if (!celulaEntrada.estaOcupada()) {
-                int direcaoInicial = celulaEntrada.getTipo().getDirecoesPermitidas()[0];
-                int velocidade = 400 + random.nextInt(200);
-                Veiculo veiculo = new Veiculo(this.proximoIdVeiculo++, entrada, direcaoInicial, this.malha, this.gerenciadorCruzamento, velocidade);
-                this.veiculos.add(veiculo);
-                veiculo.start();
-                PrintStream var10000 = System.out;
-                int var10001 = veiculo.getVeiculoId();
-                var10000.println("Veículo " + var10001 + " inserido em " + String.valueOf(entrada) + " com direção " + direcaoInicial + " e velocidade " + velocidade + "ms");
-            }
+            return;
+        }
+
+        Posicao entrada = pontosEntrada.get(random.nextInt(pontosEntrada.size()));
+        Celula celulaEntrada = this.malha.getCelula(entrada);
+
+        if (!celulaEntrada.estaOcupada()) {
+            int direcaoInicial = celulaEntrada.getTipo().getDirecoesPermitidas()[0];
+            int velocidade = 400 + random.nextInt(200);
+            Veiculo veiculo = new Veiculo(this.proximoIdVeiculo++, entrada, direcaoInicial,
+                    this.malha, this.gerenciadorCruzamento, velocidade);
+            this.veiculos.add(veiculo);
+            veiculo.start();
+            System.out.println("Veículo " + veiculo.getVeiculoId() + " inserido em " + entrada +
+                    " com direção " + direcaoInicial + " e velocidade " + velocidade + "ms");
         }
     }
 
@@ -114,7 +116,6 @@ public class SimuladorController {
         if (this.threadInsercao != null) {
             this.threadInsercao.interrupt();
         }
-
     }
 
     public void encerrarSimulacao() {
@@ -160,9 +161,8 @@ public class SimuladorController {
     public void trocarEstrategia(SincronizacaoStrategy novaEstrategia) {
         if (this.simulacaoAtiva) {
             throw new IllegalStateException("Não é possível trocar a estratégia com a simulação ativa");
-        } else {
-            this.estrategiaAtual = novaEstrategia;
-            this.gerenciadorCruzamento = new Cruzamento(this.malha, novaEstrategia);
         }
+        this.estrategiaAtual = novaEstrategia;
+        this.gerenciadorCruzamento = new Cruzamento(this.malha, novaEstrategia);
     }
 }

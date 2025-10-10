@@ -82,7 +82,6 @@ public class Celula {
     }
 
     public String toString() {
-        String var10000 = String.valueOf(this.tipo);
-        return "Celula{tipo=" + var10000 + ", posicao=" + String.valueOf(this.posicao) + ", veiculoId=" + this.veiculoId + "}";
+        return "Celula{tipo=" + this.tipo + ", posicao=" + this.posicao + ", veiculoId=" + this.veiculoId + "}";
     }
 }

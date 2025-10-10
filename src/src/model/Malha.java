@@ -54,10 +54,10 @@ public class Malha {
                     Posicao pos = new Posicao(i, j);
                     Celula celula = new Celula(tipo, pos);
                     malha.grid[i][j] = celula;
+
                     if (celula.isEntrada(numLinhas, numColunas)) {
                         malha.pontosEntrada.add(pos);
                     }
-
                     if (celula.isSaida(numLinhas, numColunas)) {
                         malha.pontosSaida.add(pos);
                     }
@@ -76,13 +76,12 @@ public class Malha {
             for(int j = 0; j < this.numColunas; ++j) {
                 Celula celula = this.grid[i][j];
                 if (celula.getTipo().isCruzamento() && !visitado[i][j]) {
-                    List<Posicao> celulasCruzamento = new ArrayList();
+                    List<Posicao> celulasCruzamento = new ArrayList<>();
                     this.identificarCruzamentoRecursivo(i, j, visitado, celulasCruzamento);
-                    Posicao idCruzamento = (Posicao)celulasCruzamento.get(0);
+                    Posicao idCruzamento = celulasCruzamento.get(0);
                     this.cruzamentos.put(idCruzamento, celulasCruzamento);
-                    PrintStream var10000 = System.out;
-                    String var10001 = String.valueOf(idCruzamento);
-                    var10000.println("Cruzamento identificado em " + var10001 + " com " + celulasCruzamento.size() + " células: " + String.valueOf(celulasCruzamento));
+                    System.out.println("Cruzamento identificado em " + idCruzamento + " com " +
+                            celulasCruzamento.size() + " células: " + celulasCruzamento);
                 }
             }
         }
@@ -124,16 +123,15 @@ public class Malha {
     }
 
     public List<Posicao> getCelulasCruzamento(Posicao posCruzamento) {
-        return (List)this.cruzamentos.getOrDefault(posCruzamento, new ArrayList());
+        return this.cruzamentos.getOrDefault(posCruzamento, new ArrayList<>());
     }
 
     public Posicao getPosicaoCruzamento(Posicao pos) {
         for(Map.Entry<Posicao, List<Posicao>> entry : this.cruzamentos.entrySet()) {
-            if (((List)entry.getValue()).contains(pos)) {
-                return (Posicao)entry.getKey();
+            if (entry.getValue().contains(pos)) {
+                return entry.getKey();
             }
         }
-
         return null;
     }
 

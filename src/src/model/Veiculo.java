@@ -46,14 +46,12 @@ public class Veiculo extends Thread {
         try {
             Celula celulaInicial = this.malha.getCelula(this.posicaoAtual);
             if (celulaInicial != null && celulaInicial.tentarOcupar(this.id)) {
-                int var9 = this.id;
-                System.out.println("Veículo " + var9 + " iniciado em " + String.valueOf(this.posicaoAtual));
+                System.out.println("Veículo " + this.id + " iniciado em " + this.posicaoAtual);
 
                 while(this.ativo && !Thread.interrupted()) {
                     Celula celulaAtual = this.malha.getCelula(this.posicaoAtual);
                     if (celulaAtual != null && celulaAtual.isSaida(this.malha.getNumLinhas(), this.malha.getNumColunas())) {
-                        var9 = this.id;
-                        System.out.println("Veículo " + var9 + " chegou à saída em " + String.valueOf(this.posicaoAtual));
+                        System.out.println("Veículo " + this.id + " chegou à saída em " + this.posicaoAtual);
                         return;
                     }
 
@@ -67,8 +65,7 @@ public class Veiculo extends Thread {
                 return;
             }
 
-            int var10001 = this.id;
-            System.err.println("Veículo " + var10001 + " não conseguiu ocupar posição inicial: " + String.valueOf(this.posicaoAtual));
+            System.err.println("Veículo " + this.id + " não conseguiu ocupar posição inicial: " + this.posicaoAtual);
             this.ativo = false;
             this.encerrado = true;
         } catch (InterruptedException var7) {
@@ -96,35 +93,57 @@ public class Veiculo extends Thread {
         Celula celulaAtual = this.malha.getCelula(this.posicaoAtual);
         if (celulaAtual == null) {
             return false;
-        } else {
-            TipoSegmento tipoAtual = celulaAtual.getTipo();
-            Posicao cruzamentoAtual = this.gerenciadorCruzamento.getPosicaoCruzamento(this.posicaoAtual);
-            boolean estouEmCruzamento = cruzamentoAtual != null;
-            int proximaDirecao = this.determinarProximaDirecao(tipoAtual, estouEmCruzamento);
-            if (proximaDirecao == -1) {
-                return false;
-            } else {
-                Posicao proximaPosicao = this.posicaoAtual.proximaPosicao(proximaDirecao);
-                if (proximaPosicao != null && this.malha.posicaoValida(proximaPosicao)) {
-                    Celula proximaCelula = this.malha.getCelula(proximaPosicao);
-                    if (proximaCelula != null && proximaCelula.getTipo() != TipoSegmento.NADA) {
-                        Posicao proximoCruzamento = this.gerenciadorCruzamento.getPosicaoCruzamento(proximaPosicao);
-                        boolean proximoEhCruzamento = proximoCruzamento != null;
-                        if (!estouEmCruzamento && proximoEhCruzamento) {
-                            return this.entrarCruzamento(proximoCruzamento, proximaPosicao, proximaDirecao);
-                        } else if (estouEmCruzamento && !proximoEhCruzamento) {
-                            return this.sairCruzamento(proximaPosicao, proximaDirecao);
-                        } else {
-                            return estouEmCruzamento && proximoEhCruzamento ? this.atravessarCruzamento(proximaPosicao, proximaDirecao) : this.moverParaPosicao(proximaPosicao, proximaDirecao);
-                        }
-                    } else {
-                        return false;
-                    }
-                } else {
-                    return false;
-                }
-            }
         }
+
+        TipoSegmento tipoAtual = celulaAtual.getTipo();
+        Posicao cruzamentoAtual = this.gerenciadorCruzamento.getPosicaoCruzamento(this.posicaoAtual);
+        boolean estouEmCruzamento = cruzamentoAtual != null;
+
+        int proximaDirecao = this.determinarProximaDirecao(tipoAtual, estouEmCruzamento);
+        if (proximaDirecao == -1) {
+            return false;
+        }
+
+        Posicao proximaPosicao = this.posicaoAtual.proximaPosicao(proximaDirecao);
+        if (!this.isPosicaoValida(proximaPosicao)) {
+            return false;
+        }
+
+        Celula proximaCelula = this.malha.getCelula(proximaPosicao);
+        if (proximaCelula == null || proximaCelula.getTipo() == TipoSegmento.NADA) {
+            return false;
+        }
+
+        Posicao proximoCruzamento = this.gerenciadorCruzamento.getPosicaoCruzamento(proximaPosicao);
+        boolean proximoEhCruzamento = proximoCruzamento != null;
+
+        return this.executarMovimento(estouEmCruzamento, proximoEhCruzamento,
+                proximoCruzamento, proximaPosicao, proximaDirecao);
+    }
+
+    private boolean isPosicaoValida(Posicao posicao) {
+        return posicao != null && this.malha.posicaoValida(posicao);
+    }
+
+    private boolean executarMovimento(boolean estouEmCruzamento, boolean proximoEhCruzamento,
+                                       Posicao proximoCruzamento, Posicao proximaPosicao, int proximaDirecao) {
+        // Veículo saindo de estrada e entrando em cruzamento
+        if (!estouEmCruzamento && proximoEhCruzamento) {
+            return this.entrarCruzamento(proximoCruzamento, proximaPosicao, proximaDirecao);
+        }
+
+        // Veículo saindo de cruzamento para estrada
+        if (estouEmCruzamento && !proximoEhCruzamento) {
+            return this.sairCruzamento(proximaPosicao, proximaDirecao);
+        }
+
+        // Veículo atravessando dentro do cruzamento
+        if (estouEmCruzamento && proximoEhCruzamento) {
+            return this.atravessarCruzamento(proximaPosicao, proximaDirecao);
+        }
+
+        // Movimento normal em estrada
+        return this.moverParaPosicao(proximaPosicao, proximaDirecao);
     }
 
     private int determinarProximaDirecao(TipoSegmento tipoAtual, boolean estouEmCruzamento) {
@@ -186,54 +205,75 @@ public class Veiculo extends Thread {
         Celula celulaEntrada = this.malha.getCelula(proximaPosicao);
         TipoSegmento tipoEntrada = celulaEntrada.getTipo();
         List<Integer> saidasPossiveis = tipoEntrada.getDirecoesSaida(proximaDirecao);
+
         if (saidasPossiveis.isEmpty()) {
             return false;
+        }
+
+        int direcaoSaidaEscolhida = saidasPossiveis.get(random.nextInt(saidasPossiveis.size()));
+        List<Posicao> caminho = this.calcularCaminhoCruzamento(proximaPosicao, proximaDirecao,
+                direcaoSaidaEscolhida, posCruzamento);
+
+        if (caminho.isEmpty()) {
+            return false;
+        }
+
+        // Verifica se o caminho está livre
+        if (!this.verificarCaminhoLivre(caminho)) {
+            return false;
+        }
+
+        // Verifica se a célula de saída está livre
+        if (!this.verificarCelulaSaidaLivre(caminho, direcaoSaidaEscolhida)) {
+            return false;
+        }
+
+        // Tenta adquirir permissão para entrar no cruzamento
+        if (!this.gerenciadorCruzamento.tentarEntrar(posCruzamento, this.id)) {
+            return false;
+        }
+
+        // Double-check: verifica novamente se o caminho ainda está livre
+        if (!this.verificarCaminhoLivre(caminho)) {
+            this.gerenciadorCruzamento.sair(posCruzamento, this.id);
+            return false;
+        }
+
+        // Executa o movimento
+        if (this.moverParaPosicao(proximaPosicao, proximaDirecao)) {
+            this.cruzamentoOcupado = posCruzamento;
+            this.direcaoEscolhida = direcaoSaidaEscolhida;
+            System.out.println("Veículo " + this.id + " ENTROU no cruzamento " + posCruzamento +
+                    " (entrada: dir " + proximaDirecao + ", saída: dir " + direcaoSaidaEscolhida +
+                    ", caminho: " + caminho.size() + " células)");
+            return true;
         } else {
-            int direcaoSaidaEscolhida = (Integer)saidasPossiveis.get(random.nextInt(saidasPossiveis.size()));
-            List<Posicao> caminho = this.calcularCaminhoCruzamento(proximaPosicao, proximaDirecao, direcaoSaidaEscolhida, posCruzamento);
-            if (caminho.isEmpty()) {
+            this.gerenciadorCruzamento.sair(posCruzamento, this.id);
+            return false;
+        }
+    }
+
+    private boolean verificarCaminhoLivre(List<Posicao> caminho) {
+        for (Posicao pos : caminho) {
+            Celula celula = this.malha.getCelula(pos);
+            if (celula != null && celula.estaOcupada()) {
                 return false;
-            } else {
-                for(Posicao pos : caminho) {
-                    Celula cel = this.malha.getCelula(pos);
-                    if (cel != null && cel.estaOcupada()) {
-                        return false;
-                    }
-                }
-
-                Posicao ultimaCelulaCruzamento = (Posicao)caminho.get(caminho.size() - 1);
-                Posicao celulaSaida = ultimaCelulaCruzamento.proximaPosicao(direcaoSaidaEscolhida);
-                if (celulaSaida != null && this.malha.posicaoValida(celulaSaida)) {
-                    Celula celSaida = this.malha.getCelula(celulaSaida);
-                    if (celSaida != null && celSaida.getTipo() != TipoSegmento.NADA && celSaida.estaOcupada()) {
-                        return false;
-                    }
-                }
-
-                if (!this.gerenciadorCruzamento.tentarEntrar(posCruzamento, this.id)) {
-                    return false;
-                } else {
-                    for(Posicao pos : caminho) {
-                        Celula cel = this.malha.getCelula(pos);
-                        if (cel != null && cel.estaOcupada()) {
-                            this.gerenciadorCruzamento.sair(posCruzamento, this.id);
-                            return false;
-                        }
-                    }
-
-                    if (this.moverParaPosicao(proximaPosicao, proximaDirecao)) {
-                        this.cruzamentoOcupado = posCruzamento;
-                        this.direcaoEscolhida = direcaoSaidaEscolhida;
-                        int var10001 = this.id;
-                        System.out.println("Veículo " + var10001 + " ENTROU no cruzamento " + String.valueOf(posCruzamento) + " (entrada: dir " + proximaDirecao + ", saída: dir " + direcaoSaidaEscolhida + ", caminho: " + caminho.size() + " células)");
-                        return true;
-                    } else {
-                        this.gerenciadorCruzamento.sair(posCruzamento, this.id);
-                        return false;
-                    }
-                }
             }
         }
+        return true;
+    }
+
+    private boolean verificarCelulaSaidaLivre(List<Posicao> caminho, int direcaoSaida) {
+        Posicao ultimaCelulaCruzamento = caminho.get(caminho.size() - 1);
+        Posicao celulaSaida = ultimaCelulaCruzamento.proximaPosicao(direcaoSaida);
+
+        if (celulaSaida != null && this.malha.posicaoValida(celulaSaida)) {
+            Celula celSaida = this.malha.getCelula(celulaSaida);
+            if (celSaida != null && celSaida.getTipo() != TipoSegmento.NADA && celSaida.estaOcupada()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean atravessarCruzamento(Posicao proximaPosicao, int proximaDirecao) {
@@ -241,8 +281,8 @@ public class Veiculo extends Thread {
         if (proximaCelula.estaOcupada()) {
             return false;
         } else if (this.moverParaPosicao(proximaPosicao, proximaDirecao)) {
-            int var10001 = this.id;
-            System.out.println("Veículo " + var10001 + " ATRAVESSANDO cruzamento em " + String.valueOf(proximaPosicao) + " (direção: " + proximaDirecao + ")");
+            System.out.println("Veículo " + this.id + " ATRAVESSANDO cruzamento em " + proximaPosicao +
+                    " (direção: " + proximaDirecao + ")");
             return true;
         } else {
             return false;
@@ -254,8 +294,7 @@ public class Veiculo extends Thread {
         if (proximaCelula.estaOcupada()) {
             return false;
         } else if (this.moverParaPosicao(proximaPosicao, proximaDirecao)) {
-            int var10001 = this.id;
-            System.out.println("Veículo " + var10001 + " SAIU do cruzamento " + String.valueOf(this.cruzamentoOcupado));
+            System.out.println("Veículo " + this.id + " SAIU do cruzamento " + this.cruzamentoOcupado);
             this.gerenciadorCruzamento.sair(this.cruzamentoOcupado, this.id);
             this.cruzamentoOcupado = null;
             this.direcaoEscolhida = null;
