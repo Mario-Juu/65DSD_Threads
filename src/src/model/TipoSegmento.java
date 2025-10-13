@@ -1,7 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
 
 package model;
 
@@ -69,19 +65,13 @@ public enum TipoSegmento {
         List<Integer> saidas = new ArrayList<>();
 
         if (this.isCruzamento) {
+            // Em cruzamentos, adiciona todas as direções permitidas
+            // EXCETO a direção oposta (não pode dar meia volta)
             int direcaoOposta = this.getDirecaoOposta(direcaoEntrada);
 
-            // Para cruzamentos unidirecionais (só 1 direção permitida),
-            // não podemos remover a direção oposta senão fica sem saída
-            if (this.direcoesPermitidas.length == 1) {
-                // Cruzamento unidirecional - só pode seguir na mesma direção
-                saidas.add(this.direcoesPermitidas[0]);
-            } else {
-                // Cruzamento bidirecional - pode virar (remove apenas direção oposta)
-                for (int direcao : this.direcoesPermitidas) {
-                    if (direcao != direcaoOposta) {
-                        saidas.add(direcao);
-                    }
+            for (int direcao : this.direcoesPermitidas) {
+                if (direcao != direcaoOposta) {
+                    saidas.add(direcao);
                 }
             }
         } else if (this.direcoesPermitidas.length > 0) {

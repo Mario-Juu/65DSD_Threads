@@ -1,7 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
 
 package model;
 
@@ -116,10 +112,6 @@ public class Malha {
 
     public Celula getCelula(int linha, int coluna) {
         return !this.posicaoValida(linha, coluna) ? null : this.grid[linha][coluna];
-    }
-
-    public boolean isCruzamento(Posicao pos) {
-        return this.cruzamentos.containsKey(pos);
     }
 
     public List<Posicao> getCelulasCruzamento(Posicao posCruzamento) {

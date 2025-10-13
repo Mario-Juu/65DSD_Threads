@@ -1,19 +1,16 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
 
 package sync;
 
 import java.util.List;
+import model.Malha;
 import model.Posicao;
 
 public interface SincronizacaoStrategy {
-    boolean tentarEntrarCruzamento(Posicao var1, List<Posicao> var2, int var3);
+    boolean tentarEntrarCruzamento(Posicao cruzamento, List<Posicao> caminhoDesejado, int veiculoId, int direcaoSaida, Malha malha);
 
-    void sairCruzamento(Posicao var1, int var2);
+    void sairCruzamento(Posicao cruzamento, int veiculoId);
 
-    void inicializarCruzamento(Posicao var1);
+    void inicializarCruzamento(Posicao cruzamento);
 
     String getNome();
 }

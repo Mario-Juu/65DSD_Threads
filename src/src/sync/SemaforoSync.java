@@ -1,89 +1,94 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
 
 package sync;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import model.Celula;
+import model.Malha;
 import model.Posicao;
 
 public class SemaforoSync implements SincronizacaoStrategy {
     private final Map<Posicao, Semaphore> semaforos = new HashMap();
-    private final Map<Posicao, Integer> ocupacao = new HashMap();
+    private final Map<Posicao, Map<Integer, List<Posicao>>> caminhosReservados = new HashMap();
     private static final long TIMEOUT_MS = 100L;
 
     public void inicializarCruzamento(Posicao cruzamento) {
         this.semaforos.put(cruzamento, new Semaphore(1, true));
-        this.ocupacao.put(cruzamento, null);
+        this.caminhosReservados.put(cruzamento, new HashMap<>());
     }
 
-    public boolean tentarEntrarCruzamento(Posicao cruzamento, List<Posicao> posicoes, int veiculoId) {
-        Semaphore semaforo = (Semaphore)this.semaforos.get(cruzamento);
+    public boolean tentarEntrarCruzamento(Posicao cruzamento, List<Posicao> caminhoDesejado, int veiculoId, int direcaoSaida, Malha malha) {
+        Semaphore semaforo = this.semaforos.get(cruzamento);
         if (semaforo == null) {
-            System.err.println("ERRO: Cruzamento não inicializado: " + String.valueOf(cruzamento));
             return false;
-        } else {
-            try {
-                boolean adquirido = semaforo.tryAcquire(100L, TimeUnit.MILLISECONDS);
-                if (adquirido) {
-                    synchronized(this.ocupacao) {
-                        this.ocupacao.put(cruzamento, veiculoId);
-                    }
+        }
 
-                    return true;
-                } else {
-                    return false;
-                }
-            } catch (InterruptedException var9) {
-                Thread.currentThread().interrupt();
+        try {
+            // Tenta adquirir o semáforo
+            if (!semaforo.tryAcquire(100L, TimeUnit.MILLISECONDS)) {
                 return false;
             }
-        }
-    }
 
-    public void sairCruzamento(Posicao cruzamento, int veiculoId) {
-        Semaphore semaforo = (Semaphore)this.semaforos.get(cruzamento);
-        if (semaforo == null) {
-            System.err.println("ERRO: Cruzamento não inicializado: " + String.valueOf(cruzamento));
-        } else {
-            synchronized(this.ocupacao) {
-                Integer ocupante = (Integer)this.ocupacao.get(cruzamento);
-                if (ocupante == null) {
-                    System.err.println("AVISO: Tentando liberar cruzamento vazio: " + String.valueOf(cruzamento));
-                    return;
+            // Verifica se o caminho está livre
+            if (!caminhoEstaLivre(caminhoDesejado, malha)) {
+                semaforo.release();
+                return false;
+            }
+
+            // Reserva todas as células do caminho
+            List<Posicao> reservadas = new ArrayList<>();
+            for (int i = 1; i < caminhoDesejado.size(); i++) {
+                Posicao pos = caminhoDesejado.get(i);
+                Celula celula = malha.getCelula(pos);
+
+                if (!celula.tentarOcupar(veiculoId)) {
+                    // Falhou ao reservar, libera tudo
+                    for (Posicao posReservada : reservadas) {
+                        malha.getCelula(posReservada).liberar();
+                    }
+                    semaforo.release();
+                    return false;
                 }
+                reservadas.add(pos);
+            }
 
-                if (!ocupante.equals(veiculoId)) {
-                    System.err.println("ERRO: Veículo " + veiculoId + " tentando liberar cruzamento ocupado por " + ocupante);
-                    return;
-                }
-
-                this.ocupacao.put(cruzamento, null);
+            // Armazena o caminho reservado
+            synchronized(this.caminhosReservados) {
+                this.caminhosReservados.get(cruzamento).put(veiculoId, new ArrayList<>(caminhoDesejado));
             }
 
             semaforo.release();
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    private boolean caminhoEstaLivre(List<Posicao> caminho, Malha malha) {
+        for (Posicao pos : caminho) {
+            Celula celula = malha.getCelula(pos);
+            if (celula.estaOcupada()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void sairCruzamento(Posicao cruzamento, int veiculoId) {
+        synchronized(this.caminhosReservados) {
+            Map<Integer, List<Posicao>> caminhos = this.caminhosReservados.get(cruzamento);
+            if (caminhos != null) {
+                caminhos.remove(veiculoId);
+            }
         }
     }
 
     public String getNome() {
         return "Semáforos";
-    }
-
-    public boolean cruzamentoOcupado(Posicao cruzamento) {
-        synchronized(this.ocupacao) {
-            Integer ocupante = (Integer)this.ocupacao.get(cruzamento);
-            return ocupante != null;
-        }
-    }
-
-    public Integer getOcupante(Posicao cruzamento) {
-        synchronized(this.ocupacao) {
-            return (Integer)this.ocupacao.get(cruzamento);
-        }
     }
 }

@@ -1,7 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
 
 package model;
 
@@ -28,16 +24,8 @@ public class Celula {
         return this.veiculoId;
     }
 
-    public synchronized void setVeiculoId(Integer veiculoId) {
-        this.veiculoId = veiculoId;
-    }
-
     public synchronized boolean estaOcupada() {
         return this.veiculoId != null;
-    }
-
-    public synchronized boolean estaLivre() {
-        return this.veiculoId == null;
     }
 
     public synchronized boolean tentarOcupar(Integer veiculoId) {

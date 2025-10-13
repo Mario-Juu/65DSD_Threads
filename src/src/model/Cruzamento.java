@@ -1,7 +1,3 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
 
 package model;
 
@@ -24,13 +20,8 @@ public class Cruzamento {
 
     }
 
-    public boolean tentarEntrar(Posicao posicao, int veiculoId) {
-        List<Posicao> celulasCruzamento = this.malha.getCelulasCruzamento(posicao);
-        if (celulasCruzamento.isEmpty()) {
-            System.err.println("ERRO: Cruzamento não encontrado: " + posicao);
-            return false;
-        }
-        return this.estrategia.tentarEntrarCruzamento(posicao, celulasCruzamento, veiculoId);
+    public boolean tentarEntrar(Posicao posicao, int veiculoId, List<Posicao> caminhoDesejado, int direcaoSaida) {
+        return this.estrategia.tentarEntrarCruzamento(posicao, caminhoDesejado, veiculoId, direcaoSaida, this.malha);
     }
 
     public void sair(Posicao posicao, int veiculoId) {
@@ -39,10 +30,6 @@ public class Cruzamento {
 
     public Posicao getPosicaoCruzamento(Posicao posicao) {
         return this.malha.getPosicaoCruzamento(posicao);
-    }
-
-    public boolean isCruzamento(Posicao posicao) {
-        return this.malha.isCruzamento(posicao);
     }
 
     public SincronizacaoStrategy getEstrategia() {
